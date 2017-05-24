@@ -4,12 +4,13 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <MobileCoreServices/MobileCoreServices.h>
+#import <QuickLook/QuickLook.h>
 
-@interface PhotoViewer : CDVPlugin <UIDocumentInteractionControllerDelegate> {
+@interface PhotoViewer : CDVPlugin <QLPreviewControllerDataSource> {
   // Member variables go here.
 }
 
-@property (nonatomic, strong) UIDocumentInteractionController *docInteractionController;
+@property (nonatomic, strong) QLPreviewController *docPreviewController;
 @property (nonatomic, strong) NSMutableArray *documentURLs;
 
 - (void)show:(CDVInvokedUrlCommand*)command;
@@ -19,14 +20,13 @@
 
 - (void)setupDocumentControllerWithURL:(NSURL *)url andTitle:(NSString *)title
 {
-    if (self.docInteractionController == nil) {
-        self.docInteractionController = [UIDocumentInteractionController interactionControllerWithURL:url];
-        self.docInteractionController.name = title;
-        self.docInteractionController.delegate = self;
-    } else {
-        self.docInteractionController.name = title;
-        self.docInteractionController.URL = url;
+    if (self.docPreviewController == nil) {
+        self.docPreviewController = [[QLPreviewController alloc] init];
+        self.docPreviewController.dataSource = self;
+        self.docPreviewController.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Закрыть" style:UIBarButtonItemStylePlain target:self action:@selector(closePreview)];
     }
+    
+    self.docPreviewController.navigationItem.title = title;
 }
 
 - (UIDocumentInteractionController *) setupControllerWithURL: (NSURL*) fileURL
@@ -36,10 +36,6 @@
     interactionController.delegate = interactionDelegate;
 
     return interactionController;
-}
-
-- (UIViewController *) documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *) controller {
-    return self.viewController;
 }
 
 - (void)show:(CDVInvokedUrlCommand*)command
@@ -71,7 +67,9 @@
                 dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delayInSeconds * NSEC_PER_SEC);
                 dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
                     [activityIndicator stopAnimating];
-                    [self.docInteractionController presentPreviewAnimated:YES];
+//                    [self.docInteractionController presentPreviewAnimated:YES];
+                    UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:self.docPreviewController];
+                    [self.viewController presentViewController:navController animated:YES completion:nil];
                 });
             }
         }];
@@ -122,6 +120,18 @@
             return @"tiff";
     }
     return nil;
+}
+
+- (void)closePreview {
+    [self.viewController dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (NSInteger)numberOfPreviewItemsInPreviewController:(QLPreviewController *)controller {
+    return self.documentURLs.length;
+}
+
+- (id<QLPreviewItem>)previewController:(QLPreviewController *)controller previewItemAtIndex:(NSInteger)index {
+    return [self.documentURLs objectAtIndex:index];
 }
 
 @end
