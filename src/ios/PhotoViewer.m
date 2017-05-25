@@ -11,6 +11,7 @@
 }
 
 @property (nonatomic, strong) QLPreviewController *docPreviewController;
+@property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) NSMutableArray *documentURLs;
 
 - (void)show:(CDVInvokedUrlCommand*)command;
@@ -24,9 +25,15 @@
         self.docPreviewController = [[QLPreviewController alloc] init];
         self.docPreviewController.dataSource = self;
         self.docPreviewController.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Закрыть" style:UIBarButtonItemStylePlain target:self action:@selector(closePreview)];
+        
+        self.titleLabel = [[UILabel alloc] init];
+        self.titleLabel.font =[[UINavigationBar appearance].titleTextAttributes objectForKey:NSFontAttributeName];
+        
+        self.dockPreviewController.navigationItem.titleView = self.titleLabel;
     }
     
-    self.docPreviewController.navigationItem.title = title;
+    self.titleLabel.text = title;
+    [self.titleLabel sizeToFit];
 }
 
 - (UIDocumentInteractionController *) setupControllerWithURL: (NSURL*) fileURL
